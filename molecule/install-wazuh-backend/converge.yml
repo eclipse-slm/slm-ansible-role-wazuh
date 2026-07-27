@@ -11,6 +11,7 @@
     fabos_wazuh_default_compose_ports:
       - container_port: 5601
         exposed_port: 5443
+    fabos_wazuh_compose_project_name: eclipse-slm
   tasks:
     - name: Include wazuh role
       ansible.builtin.include_role:

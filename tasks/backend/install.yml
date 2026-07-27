@@ -30,6 +30,7 @@
 
 - name: Run docker compose workloads
   community.docker.docker_compose_v2:
+    project_name: "{{ fabos_wazuh_compose_project_name | default('wazuh') }}"
     project_src: "{{ fabos_wazuh_default_single_node_compose_dir }}"
     files: "{{ [item] }}"
     state: present
@@ -38,5 +39,3 @@
     - compose_result is changed
     - '"Found orphan containers" not in compose_result.stderr'
   loop: "{{ fabos_wazuh_default_compose_files }}"
-    # - [generate-indexer-certs.yml]
-    # - [docker-compose.yml]
