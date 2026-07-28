@@ -34,7 +34,7 @@
     state: directory
     owner: root
     group: root
-    mode: 0755
+    mode: "0755"
   loop:
     - "{{ fabos_wazuh_default_config_dir }}"
     - "{{ fabos_wazuh_default_docker_compose_dir }}"
@@ -45,7 +45,7 @@
     dest: "{{ item.dest }}"
     owner: root
     group: root
-    mode: 0755
+    mode: "0755"
     remote_src: true
   loop:
     - src: "{{ fabos_wazuh_default_single_node_compose_dir }}/config/"
@@ -81,6 +81,22 @@
     replace: '{{ fabos_wazuh_default_config_dir }}'
   loop: "{{ fabos_wazuh_default_compose_files }}"
 
+- name: Rename original docker-compose.yml file to wazuh.yml
+  block:
+    - name: Copy docker-compose.yml to wazuh.yml
+      ansible.builtin.copy:
+        src: "{{ fabos_wazuh_default_docker_compose_dir }}/docker-compose.yml"
+        dest: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
+        remote_src: true
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Remove original docker-compose.yml file
+      ansible.builtin.file:
+        path: "{{ fabos_wazuh_default_docker_compose_dir }}/docker-compose.yml"
+        state: absent
+
 - name: Run docker compose workloads
   community.docker.docker_compose_v2:
     project_name: "{{ fabos_wazuh_compose_project_name | default('wazuh') }}"
@@ -91,4 +107,6 @@
   changed_when:
     - compose_result is changed
     - '"Found orphan containers" not in compose_result.stderr'
-  loop: "{{ fabos_wazuh_default_compose_files }}"
+  loop:
+    - generate-indexer-certs.yml
+    - wazuh.yml
