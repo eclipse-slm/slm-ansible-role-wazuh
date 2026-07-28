@@ -1,19 +1,10 @@
 ---
-roles:
-  - src: "git+https://github.com/eclipse-slm/molecule_kubevirt"
-    scm: git
-    version: main
-    name: fabos.molecule_kubevirt
+- src: "git+https://github.com/eclipse-slm/molecule_kubevirt"
+  scm: git
+  version: main
+  name: fabos.molecule_kubevirt
 
-  - src: "git+https://github.com/eclipse-slm/slm-ansible-role-docker"
-    scm: git
-    version: main
-    name: fabos.slm-ansible-role-docker
-
-collections:
-  - name: community.docker
-    version: ">=3.0.0"
-  - name: kubernetes.core
-    version: ">=2.4.0"
-  - name: ansible.posix
-    version: ">=2.2.0"
+- src: "git+https://github.com/eclipse-slm/slm-ansible-role-docker"
+  scm: git
+  version: main
+  name: fabos.slm-ansible-role-docker
