@@ -8,14 +8,14 @@
     state: present
     reload: true
 
-- name: Compute final Wazuh version for compose URL
+- name: Set final Wazuh version for compose URL
   ansible.builtin.set_fact:
     fabos_wazuh_final_version: "{{ fabos_wazuh_backend_version | default(fabos_wazuh_default_version) }}"
 
 - name: Clone Wazuh Docker repository
   ansible.builtin.git:
     repo: "{{ fabos_wazuh_default_wazuh_docker_git_url }}"
-    dest: "{{ fabos_wazuh_default_wazuh_docker_dir }}"
+    dest: "{{ fabos_wazuh_default_wazuh_download_dir }}"
     version: "{{ fabos_wazuh_final_version }}"
   register: cloned_repo
   ignore_errors: true
@@ -28,10 +28,63 @@
     backrefs: true
   loop: "{{ fabos_wazuh_default_compose_ports | default([]) }}"
 
+- name: Ensure docker-compose and config directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  loop:
+    - "{{ fabos_wazuh_default_config_dir }}"
+    - "{{ fabos_wazuh_default_docker_compose_dir }}"
+
+- name: "Copy wazuh compose file and config"
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0755
+    remote_src: true
+  loop:
+    - src: "{{ fabos_wazuh_default_single_node_compose_dir }}/config/"
+      dest: "{{ fabos_wazuh_default_config_dir }}"
+    - src: "{{ fabos_wazuh_default_single_node_compose_dir }}/{{ fabos_wazuh_default_compose_files[0] }}"
+      dest: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ fabos_wazuh_default_compose_files[0] }}"
+    - src: "{{ fabos_wazuh_default_single_node_compose_dir }}/{{ fabos_wazuh_default_compose_files[1] }}"
+      dest: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ fabos_wazuh_default_compose_files[1] }}"
+
+- name: "Modify Wazuh dashboard configuration"
+  when: item.when
+  ansible.builtin.lineinfile:
+    path: "{{ fabos_wazuh_default_config_dir }}/wazuh_dashboard/opensearch_dashboards.yml"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line | default(omit) }}"
+    state: "{{ item.state | default(omit) }}"
+  loop:
+    - when: "{{ not fabos_wazuh_default_dashboard_tls_enabled }}"
+      regexp: '^server.ssl.enabled:'
+      line: 'server.ssl.enabled: false'
+    - when: "{{ fabos_wazuh_default_dashboard_base_url | length > 0 }}"
+      regexp: '^server.basePath:'
+      line: 'server.basePath: "{{ fabos_wazuh_default_dashboard_base_url }}"'
+    - when: "{{ fabos_wazuh_default_dashboard_base_url | length == 0 }}"
+      regexp: '^server.basePath:'
+      state: absent
+  register: dashboard_config_result
+
+- name: Replace volume path on host
+  ansible.builtin.replace:
+    path: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ item }}"
+    regexp: '\./config'
+    replace: '{{ fabos_wazuh_default_config_dir }}'
+  loop: "{{ fabos_wazuh_default_compose_files }}"
+
 - name: Run docker compose workloads
   community.docker.docker_compose_v2:
     project_name: "{{ fabos_wazuh_compose_project_name | default('wazuh') }}"
-    project_src: "{{ fabos_wazuh_default_single_node_compose_dir }}"
+    project_src: "{{ fabos_wazuh_default_docker_compose_dir }}"
     files: "{{ [item] }}"
     state: present
   register: compose_result
