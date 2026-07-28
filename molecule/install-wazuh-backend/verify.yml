@@ -8,9 +8,9 @@
   vars:
     # Wazuh service names from docker-compose
     wazuh_services:
-      - single-node-wazuh.manager-1
-      - single-node-wazuh.indexer-1
-      - single-node-wazuh.dashboard-1
+      - wazuh.manager
+      - wazuh.indexer
+      - wazuh.dashboard
 
     # Required listening ports
     wazuh_required_ports:
@@ -19,10 +19,6 @@
       - port: 1515
       - port: 9200
       - port: 55000
-
-    # Docker Compose project directory
-    wazuh_compose_dir: "{{ fabos_wazuh_default_backend_compose_dir | default('/opt/wazuh') }}"
-
   tasks:
     - name: Verify Wazuh containers are running
       ansible.builtin.shell: |
@@ -33,7 +29,7 @@
     - name: Check that all Wazuh services are running
       ansible.builtin.assert:
         that:
-          - item in running_containers.stdout_lines
+          - running_containers.stdout_lines | select('search', item) | list | length > 0
         fail_msg: "Service {{ item }} is not running"
         success_msg: "Service {{ item }} is running"
       loop: "{{ wazuh_services }}"
