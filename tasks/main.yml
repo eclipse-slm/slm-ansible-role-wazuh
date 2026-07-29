@@ -27,14 +27,3 @@
 - name: "Include {{ fabos_wazuh_service }} uninstall tasks"
   ansible.builtin.include_tasks: "{{ fabos_wazuh_service }}/uninstall.yml"
   when: fabos_wazuh_service_state == "absent"    
-
-
-#- name: Include backend task file
-#  ansible.builtin.include_tasks: backend.yml
-#  when: fabos_wazuh_service == 'backend'
-#
-#- name: Include agent task file
-#  ansible.builtin.include_tasks: agent.yml
-#  when: fabos_wazuh_service == 'agent'
-
-
