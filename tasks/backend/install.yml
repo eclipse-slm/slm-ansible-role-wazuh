@@ -39,6 +39,7 @@
     - "{{ fabos_wazuh_default_config_dir }}"
     - "{{ fabos_wazuh_default_docker_compose_dir }}"
 
+# TODO: Check correct copy (files are converted to dicts ??)
 - name: "Copy wazuh compose file and config"
   ansible.builtin.copy:
     src: "{{ item.src }}"
