@@ -1,8 +1,12 @@
 ---
+### Inputs:
 - name: Assert Inputs
   ansible.builtin.assert:
     that:
       - (fabos_wazuh_manager_ip is defined) and (fabos_wazuh_manager_ip | length > 0)
+
+### Optional Inputs:
+# fabos_wazuh_manager_port: This must match the associated listening port configured on the Wazuh manager. (default: 1514)
 
 - name: Install required packages for Wazuh repository
   ansible.builtin.apt:
@@ -29,6 +33,7 @@
     update_cache: true
   environment:
     WAZUH_MANAGER: "{{ fabos_wazuh_manager_ip }}"
+    WAZUH_MANAGER_PORT: "{{ fabos_wazuh_manager_port | default(1514) }}"
 
 - name: Reload systemd daemon
   ansible.builtin.systemd:
