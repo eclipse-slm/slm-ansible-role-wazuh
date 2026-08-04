@@ -10,7 +10,7 @@
       - gnupg
       - apt-transport-https
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Add Wazuh APT repository and manage its key natively
   ansible.builtin.deb822_repository:
@@ -26,16 +26,16 @@
   ansible.builtin.apt:
     name: wazuh-agent
     state: present
-    update_cache: yes
+    update_cache: true
   environment:
     WAZUH_MANAGER: "{{ fabos_wazuh_manager_ip }}"
 
 - name: Reload systemd daemon
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true
 
 - name: Start Wazuh agent service
   ansible.builtin.systemd:
     name: wazuh-agent
     state: started
-    enabled: yes
+    enabled: true
