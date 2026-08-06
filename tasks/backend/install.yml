@@ -1,6 +1,6 @@
 ---
 # tasks file for installing wazuh backend on docker
-- name: Set vm.max_map_count sysctl parameter
+- name: WAZUH BACKEND | Set vm.max_map_count sysctl parameter
   ansible.posix.sysctl:
     name: vm.max_map_count
     value: "262144"
@@ -8,11 +8,11 @@
     state: present
     reload: true
 
-- name: Set final Wazuh version for compose URL
+- name: WAZUH BACKEND | Set final Wazuh version for compose URL
   ansible.builtin.set_fact:
     fabos_wazuh_final_version: "{{ fabos_wazuh_backend_version | default(fabos_wazuh_default_version) }}"
 
-- name: Clone Wazuh Docker repository
+- name: WAZUH BACKEND | Clone Wazuh Docker repository
   ansible.builtin.git:
     repo: "{{ fabos_wazuh_default_wazuh_docker_git_url }}"
     dest: "{{ fabos_wazuh_default_wazuh_download_dir }}"
@@ -20,7 +20,7 @@
   register: cloned_repo
   ignore_errors: true
 
-- name: Replace exposed ports in docker-compose file
+- name: WAZUH BACKEND | Replace exposed ports in docker-compose file
   ansible.builtin.lineinfile:
     path: "{{ fabos_wazuh_default_single_node_compose_dir }}/docker-compose.yml"
     regexp: '(\s+-\s)"*.*:{{ item.container_port }}"*'
@@ -28,7 +28,7 @@
     backrefs: true
   loop: "{{ fabos_wazuh_default_compose_ports | default([]) }}"
 
-- name: Ensure docker-compose and config directories exist
+- name: WAZUH BACKEND | Ensure docker-compose and config directories exist
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -40,7 +40,7 @@
     - "{{ fabos_wazuh_default_docker_compose_dir }}"
 
 # TODO: Check correct copy (files are converted to dicts ??)
-- name: "Copy wazuh compose file and config"
+- name: "WAZUH BACKEND | Copy wazuh compose file and config"
   ansible.builtin.copy:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
@@ -56,7 +56,7 @@
     - src: "{{ fabos_wazuh_default_single_node_compose_dir }}/{{ fabos_wazuh_default_compose_files[1] }}"
       dest: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ fabos_wazuh_default_compose_files[1] }}"
 
-- name: "Modify Wazuh dashboard configuration"
+- name: "WAZUH BACKEND | Modify Wazuh dashboard configuration"
   when: item.when
   ansible.builtin.lineinfile:
     path: "{{ fabos_wazuh_default_config_dir }}/wazuh_dashboard/opensearch_dashboards.yml"
@@ -75,16 +75,16 @@
       state: absent
   register: dashboard_config_result
 
-- name: Replace volume path on host
+- name: WAZUH BACKEND | Replace volume path on host
   ansible.builtin.replace:
     path: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ item }}"
     regexp: '\./config'
     replace: '{{ fabos_wazuh_default_config_dir }}'
   loop: "{{ fabos_wazuh_default_compose_files }}"
 
-- name: Rename original docker-compose.yml file to wazuh.yml
+- name: WAZUH BACKEND | Rename original docker-compose.yml file to wazuh.yml
   block:
-    - name: Copy docker-compose.yml to wazuh.yml
+    - name: WAZUH BACKEND | Copy docker-compose.yml to wazuh.yml
       ansible.builtin.copy:
         src: "{{ fabos_wazuh_default_docker_compose_dir }}/docker-compose.yml"
         dest: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
@@ -93,12 +93,12 @@
         group: root
         mode: "0644"
 
-    - name: Remove original docker-compose.yml file
+    - name: WAZUH BACKEND | Remove original docker-compose.yml file
       ansible.builtin.file:
         path: "{{ fabos_wazuh_default_docker_compose_dir }}/docker-compose.yml"
         state: absent
 
-- name: Run docker compose workloads
+- name: WAZUH BACKEND | Run docker compose workloads
   community.docker.docker_compose_v2:
     project_name: "{{ fabos_wazuh_compose_project_name | default('wazuh') }}"
     project_src: "{{ fabos_wazuh_default_docker_compose_dir }}"

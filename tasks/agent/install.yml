@@ -8,7 +8,7 @@
 ### Optional Inputs:
 # fabos_wazuh_manager_port: This must match the associated listening port configured on the Wazuh manager. (default: 1514)
 
-- name: Install required packages for Wazuh repository
+- name: WAZUH AGENT | Install required packages for Wazuh repository
   ansible.builtin.apt:
     name:
       - gnupg
@@ -16,7 +16,7 @@
     state: present
     update_cache: true
 
-- name: Add Wazuh APT repository and manage its key natively
+- name: WAZUH AGENT | Add Wazuh APT repository and manage its key natively
   ansible.builtin.deb822_repository:
     name: wazuh
     types: [deb]
@@ -26,7 +26,7 @@
     signed_by: https://packages.wazuh.com/key/GPG-KEY-WAZUH
     state: present
 
-- name: Install Wazuh agent
+- name: WAZUH AGENT | Install Wazuh agent
   ansible.builtin.apt:
     name: wazuh-agent
     state: present
@@ -35,11 +35,11 @@
     WAZUH_MANAGER: "{{ fabos_wazuh_manager_ip }}"
     WAZUH_MANAGER_PORT: "{{ fabos_wazuh_manager_port | default(1514) }}"
 
-- name: Reload systemd daemon
+- name: WAZUH AGENT | Reload systemd daemon
   ansible.builtin.systemd:
     daemon_reload: true
 
-- name: Start Wazuh agent service
+- name: WAZUH AGENT | Start Wazuh agent service
   ansible.builtin.systemd:
     name: wazuh-agent
     state: started

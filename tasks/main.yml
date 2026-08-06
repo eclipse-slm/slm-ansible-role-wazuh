@@ -1,7 +1,7 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # tasks file for wazuh
-- name: Validate configured Wazuh service
+- name: WAZUH | Validate configured Wazuh service
   ansible.builtin.assert:
     that:
       - fabos_wazuh_service in fabos_wazuh_default_service_types
@@ -10,7 +10,7 @@
       but was {{ fabos_wazuh_service | default('unset') }}.
     quiet: true
 
-- name: Validate configured Wazuh service state
+- name: WAZUH | Validate configured Wazuh service state
   ansible.builtin.assert:
     that:
       - fabos_wazuh_service_state in fabos_wazuh_default_service_state_types
@@ -20,10 +20,10 @@
       {{ fabos_wazuh_service_state | default('unset') }}.
     quiet: true
 
-- name: "Include {{ fabos_wazuh_service }} install tasks"
+- name: "WAZUH | Include {{ fabos_wazuh_service }} install tasks"
   ansible.builtin.include_tasks: "{{ fabos_wazuh_service }}/install.yml"
   when: fabos_wazuh_service_state == "present"
 
-- name: "Include {{ fabos_wazuh_service }} uninstall tasks"
+- name: "WAZUH | Include {{ fabos_wazuh_service }} uninstall tasks"
   ansible.builtin.include_tasks: "{{ fabos_wazuh_service }}/uninstall.yml"
   when: fabos_wazuh_service_state == "absent"    
