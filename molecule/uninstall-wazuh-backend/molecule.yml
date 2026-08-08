@@ -40,10 +40,9 @@ ansible:
 
   playbooks:
     create: ../default/create-kv.yml
-    converge: converge.yml
     destroy: ../default/destroy-kv.yml
-    cleanup: cleanup.yml
     prepare: prepare.yml
+    converge: converge.yml
     verify: verify.yml
 
 scenario:
