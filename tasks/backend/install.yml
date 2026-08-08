@@ -39,8 +39,18 @@
     - "{{ fabos_wazuh_default_config_dir }}"
     - "{{ fabos_wazuh_default_docker_compose_dir }}"
 
+- name: WAZUH BACKEND | Stat config dir and docker-compose files
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ fabos_wazuh_default_config_dir }}/wazuh_dashboard"
+    - "{{ fabos_wazuh_default_docker_compose_dir }}/{{ fabos_wazuh_default_compose_files[0] }}"
+    - "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
+  register: stat_results
+
 # TODO: Check correct copy (files are converted to dicts ??)
 - name: "WAZUH BACKEND | Copy wazuh compose file and config"
+  when: not stat_results.results[i].stat.exists
   ansible.builtin.copy:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
@@ -48,13 +58,15 @@
     group: root
     mode: "0755"
     remote_src: true
+  loop_control:
+    index_var: i
   loop:
     - src: "{{ fabos_wazuh_default_single_node_compose_dir }}/config/"
       dest: "{{ fabos_wazuh_default_config_dir }}"
     - src: "{{ fabos_wazuh_default_single_node_compose_dir }}/{{ fabos_wazuh_default_compose_files[0] }}"
       dest: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ fabos_wazuh_default_compose_files[0] }}"
     - src: "{{ fabos_wazuh_default_single_node_compose_dir }}/{{ fabos_wazuh_default_compose_files[1] }}"
-      dest: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ fabos_wazuh_default_compose_files[1] }}"
+      dest: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
 
 - name: "WAZUH BACKEND | Modify Wazuh dashboard configuration"
   when: item.when
@@ -80,23 +92,25 @@
     path: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ item }}"
     regexp: '\./config'
     replace: '{{ fabos_wazuh_default_config_dir }}'
-  loop: "{{ fabos_wazuh_default_compose_files }}"
+  loop:
+    - generate-indexer-certs.yml
+    - wazuh.yml
 
-- name: WAZUH BACKEND | Rename original docker-compose.yml file to wazuh.yml
-  block:
-    - name: WAZUH BACKEND | Copy docker-compose.yml to wazuh.yml
-      ansible.builtin.copy:
-        src: "{{ fabos_wazuh_default_docker_compose_dir }}/docker-compose.yml"
-        dest: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
-        remote_src: true
-        owner: root
-        group: root
-        mode: "0644"
+# - name: WAZUH BACKEND | Rename original docker-compose.yml file to wazuh.yml
+#   block:
+#     - name: WAZUH BACKEND | Copy docker-compose.yml to wazuh.yml
+#       ansible.builtin.copy:
+#         src: "{{ fabos_wazuh_default_docker_compose_dir }}/docker-compose.yml"
+#         dest: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
+#         remote_src: true
+#         owner: root
+#         group: root
+#         mode: "0644"
 
-    - name: WAZUH BACKEND | Remove original docker-compose.yml file
-      ansible.builtin.file:
-        path: "{{ fabos_wazuh_default_docker_compose_dir }}/docker-compose.yml"
-        state: absent
+    # - name: WAZUH BACKEND | Remove original docker-compose.yml file
+    #   ansible.builtin.file:
+    #     path: "{{ fabos_wazuh_default_docker_compose_dir }}/docker-compose.yml"
+    #     state: absent
 
 - name: WAZUH BACKEND | Run docker compose workloads
   community.docker.docker_compose_v2:
