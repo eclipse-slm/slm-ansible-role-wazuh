@@ -1,18 +1,21 @@
 ---
 - name: WAZUH BACKEND | Stat compose directory
   ansible.builtin.stat:
-    path: "{{ fabos_wazuh_default_single_node_compose_dir }}"
+    path: "{{ fabos_wazuh_default_docker_compose_dir }}"
   register: compose_dir
 
 - name: WAZUH BACKEND | Remove docker compose workloads
   when: compose_dir.stat.exists
   community.docker.docker_compose_v2:
-    project_src: "{{ fabos_wazuh_default_single_node_compose_dir }}"
+    project_name: "{{ fabos_wazuh_compose_project_name | default('wazuh') }}"
+    project_src: "{{ fabos_wazuh_default_docker_compose_dir }}"
     files: "{{ [item] }}"
     state: absent
-  loop: "{{ fabos_wazuh_default_compose_files }}"
+  loop:
+    - generate-indexer-certs.yml
+    - wazuh.yml
 
 - name: WAZUH BACKEND | Remove Wazuh Docker repository
   ansible.builtin.file:
-    path: "{{ fabos_wazuh_default_wazuh_docker_dir }}"
+    path: "{{ fabos_wazuh_default_docker_compose_dir }}"
     state: absent
