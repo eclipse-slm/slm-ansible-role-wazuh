@@ -1,0 +1,12 @@
+---
+# Purpose: bring the instance to the desired state by running the role under test.
+# Molecule calls this playbook with `molecule converge`.
+- name: CONVERGE - UNINSTALL WAZUH AGENT
+  hosts: wazuh-agent
+  gather_facts: true
+  become: true
+  vars:
+    fabos_wazuh_service: agent
+    fabos_wazuh_service_state: absent
+  roles:
+    - "../../../ansible-role-wazuh"

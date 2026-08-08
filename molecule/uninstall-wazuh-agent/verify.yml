@@ -1,0 +1,21 @@
+---
+# Purpose: verify Wazuh agent deployment state
+# Molecule calls this playbook with `molecule verify`
+- name: VERIFY - UNINSTALL WAZUH AGENT
+  hosts: wazuh-agent
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Assert wazuh agent service is absent
+      ansible.builtin.systemd_service:
+        name: wazuh-agent
+      check_mode: true
+      register: wazuh_agent_service
+
+    - debug:
+        var: wazuh_agent_service.status.ActiveState
+
+    - name: Assert that the Wazuh agent service is absent
+      ansible.builtin.assert:
+        that:
+          - wazuh_agent_service.status.ActiveState != "active"

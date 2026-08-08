@@ -1,0 +1,11 @@
+---
+- name: PREPARE - UNINSTALL WAZUH AGENT
+  hosts: wazuh-agent
+  gather_facts: true
+  become: true
+  vars:
+    fabos_wazuh_service: agent
+    fabos_wazuh_service_state: present
+    fabos_wazuh_manager_ip: "1.2.3.4"
+  roles:
+    - "../../../ansible-role-wazuh"
