@@ -20,12 +20,12 @@
       ansible.builtin.assert:
         that:
           - docker_host_facts.containers | length == 0
-        fail_msg: "Some containers are still running on the host."
+        fail_msg: "{{ docker_host_facts.containers | length }} containers are still running on the host."
         success_msg: "No containers are running on the host."
 
     - name: Assert Clone directory is removed
       ansible.builtin.assert:
         that:
-          - not (fabos_wazuh_default_wazuh_docker_dir is directory)
+          - not (fabos_wazuh_default_docker_compose_dir is directory)
         fail_msg: "Wazuh Docker directory still exists."
         success_msg: "Wazuh Docker directory has been removed."
