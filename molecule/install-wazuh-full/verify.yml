@@ -5,7 +5,7 @@
 - ansible.builtin.import_playbook: ../install-wazuh-agent-ubuntu-24/verify.yml
 
 - name: Verify - Backend/Agend Deployment
-  hosts: wazuh-backend
+  hosts: wazuh_backend
   gather_facts: false
   become: true
   vars:
@@ -13,7 +13,7 @@
     wazuh_manager_api_username_env_var: API_USERNAME
     wazuh_manager_api_password_env_var: API_PASSWORD
 
-    wazuh_agent_group_name: 'wazuh-agent'
+    wazuh_agent_group_name: 'wazuh_agent'
   tasks:
     - name: Get Container details
       community.docker.docker_container_info:

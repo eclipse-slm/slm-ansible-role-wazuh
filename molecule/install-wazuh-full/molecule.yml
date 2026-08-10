@@ -9,23 +9,23 @@ dependency:
     requirements-file: requirements.yml
 
 platforms:
-  - name: wazuh-backend
+  - name: ansible-role-wazuh-wazuh-backend
     image: quay.io/containerdisks/ubuntu:24.04
-    volume_size: 30Gi
+    volume_size: 40Gi
     instancetype: u1.large
-    groups: ["wazuh-backend"]
+    groups: ["wazuh_backend"]
 
-  - name: wazuh-agent-1
+  - name: ansible-role-wazuh-wazuh-agent-1
     image: quay.io/containerdisks/ubuntu:24.04
     volume_size: 25Gi
     instancetype: u1.large
-    groups: ["wazuh-agent"]
+    groups: ["wazuh_agent"]
 
-  - name: wazuh-agent-2
+  - name: ansible-role-wazuh-wazuh-agent-2
     image: quay.io/containerdisks/ubuntu:24.04
     volume_size: 25Gi
     instancetype: u1.large
-    groups: ["wazuh-agent"]
+    groups: ["wazuh_agent"]
 
 ansible:
   cfg:

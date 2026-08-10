@@ -2,7 +2,7 @@
 # Purpose: bring the instance to the desired state by running the role under test.
 # Molecule calls this playbook with `molecule converge`.
 - name: CONVERGE - UNINSTALL WAZUH AGENT
-  hosts: wazuh-agent
+  hosts: wazuh_agent
   gather_facts: true
   become: true
   vars:

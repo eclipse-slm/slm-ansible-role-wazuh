@@ -1,6 +1,6 @@
 ---
 - name: Prepare
-  hosts: wazuh-backend
+  hosts: wazuh_backend
   gather_facts: true
   become: true
   tasks:

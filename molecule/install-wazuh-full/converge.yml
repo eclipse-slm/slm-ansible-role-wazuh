@@ -2,7 +2,7 @@
 # Purpose: bring the instance to the desired state by running the role under test.
 # Molecule calls this playbook with `molecule converge`.
 - name: Converge - Backend
-  hosts: wazuh-backend
+  hosts: wazuh_backend
   gather_facts: true
   become: true
   vars:
@@ -14,13 +14,13 @@
         name: wazuh
 
 - name: Converge - Agent
-  hosts: wazuh-agent
+  hosts: wazuh_agent
   gather_facts: true
   become: true
   vars:
     fabos_wazuh_service: agent
     fabos_wazuh_service_state: present
-    fabos_wazuh_manager_ip: "{{ hostvars[groups['wazuh-backend'][0]].ansible_host }}"
+    fabos_wazuh_manager_ip: "{{ hostvars[groups['wazuh_backend'][0]].ansible_host }}"
   tasks:
     - name: Include wazuh role
       ansible.builtin.include_role:

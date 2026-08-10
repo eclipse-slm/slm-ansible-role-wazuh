@@ -13,7 +13,7 @@ platforms:
     image: quay.io/containerdisks/ubuntu:24.04
     volume_size: 25Gi
     instancetype: u1.large
-    groups: ["wazuh-agent"]
+    groups: ["wazuh_agent"]
 
 ansible:
   cfg:

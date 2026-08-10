@@ -2,7 +2,7 @@
 # Purpose: verify Wazuh backend deployment state
 # Molecule calls this playbook with `molecule verify`
 - name: Verify Wazuh Backend Deployment
-  hosts: wazuh-backend
+  hosts: wazuh_backend
   gather_facts: false
   become: true
   vars:

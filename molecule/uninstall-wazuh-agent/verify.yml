@@ -2,7 +2,7 @@
 # Purpose: verify Wazuh agent deployment state
 # Molecule calls this playbook with `molecule verify`
 - name: VERIFY - UNINSTALL WAZUH AGENT
-  hosts: wazuh-agent
+  hosts: wazuh_agent
   gather_facts: false
   become: true
   tasks:

@@ -2,8 +2,8 @@
 # Purpose: bring the instance to the desired state by running the role under test.
 # Molecule calls this playbook with `molecule converge`.
 - name: Converge
-  hosts: wazuh-backend
-  gather_facts: true
+  hosts: wazuh_backend
+  gather_facts: false
   become: true
   vars:
     fabos_wazuh_service: backend
@@ -12,7 +12,5 @@
       - container_port: 5601
         exposed_port: 5443
     fabos_wazuh_compose_project_name: eclipse-slm
-  tasks:
-    - name: Include wazuh role
-      ansible.builtin.include_role:
-        name: wazuh
+  roles:
+    - wazuh

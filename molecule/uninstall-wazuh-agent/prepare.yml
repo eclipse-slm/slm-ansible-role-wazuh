@@ -1,6 +1,6 @@
 ---
 - name: PREPARE - UNINSTALL WAZUH AGENT
-  hosts: wazuh-agent
+  hosts: wazuh_agent
   gather_facts: true
   become: true
   vars:
