@@ -124,7 +124,7 @@
   ansible.builtin.file:
     path: '{{ item.path }}'
     state: file
-    mode: "0440"
+    mode: "0444"
   loop: '{{ wazuh_indexer_ssl_cert_files.files }}'
 
 - name: WAZUH BACKEND | Insert monitord keep log days option in config file
