@@ -33,7 +33,6 @@ ansible:
       ansible_playbook:
         - --diff
         - --force-handlers
-        - --inventory=/path/to/inventory.yml
       ansible_navigator:
         - --mode stdout
         - --pull-policy missing
