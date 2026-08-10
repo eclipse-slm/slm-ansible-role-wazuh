@@ -1,5 +1,9 @@
 ---
 # tasks file for installing wazuh backend on docker
+
+### Optional Inputs:
+# - fabos_wazuh_backend_monitord_keep_log_days: 30  # https://documentation.wazuh.com/current/user-manual/reference/internal-options.html#monitord (default: 1)
+
 - name: WAZUH BACKEND | Set vm.max_map_count sysctl parameter
   ansible.posix.sysctl:
     name: vm.max_map_count
@@ -96,22 +100,6 @@
     - generate-indexer-certs.yml
     - wazuh.yml
 
-# - name: WAZUH BACKEND | Rename original docker-compose.yml file to wazuh.yml
-#   block:
-#     - name: WAZUH BACKEND | Copy docker-compose.yml to wazuh.yml
-#       ansible.builtin.copy:
-#         src: "{{ fabos_wazuh_default_docker_compose_dir }}/docker-compose.yml"
-#         dest: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
-#         remote_src: true
-#         owner: root
-#         group: root
-#         mode: "0644"
-
-    # - name: WAZUH BACKEND | Remove original docker-compose.yml file
-    #   ansible.builtin.file:
-    #     path: "{{ fabos_wazuh_default_docker_compose_dir }}/docker-compose.yml"
-    #     state: absent
-
 - name: WAZUH BACKEND | Run docker compose workloads
   community.docker.docker_compose_v2:
     project_name: "{{ fabos_wazuh_compose_project_name | default('wazuh') }}"
@@ -125,3 +113,11 @@
   loop:
     - generate-indexer-certs.yml
     - wazuh.yml
+
+- name: WAZUH BACKEND | Insert monitord keep log days option in config file
+  ansible.builtin.lineinfile:
+    path: "/var/lib/docker/volumes/{{ fabos_wazuh_compose_project_name | default('wazuh') }}_wazuh_etc/_data/local_internal_options.conf"
+    regexp: '^monitord.keep_log_days='
+    line: "monitord.keep_log_days={{ fabos_wazuh_backend_monitord_keep_log_days | default(1) }}"
+    create: true
+  notify: Restart Manager

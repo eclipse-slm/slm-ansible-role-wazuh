@@ -1,3 +1,11 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # handlers file for wazuh
+- name: Restart Manager
+  community.docker.docker_compose_v2:
+    project_name: "{{ fabos_wazuh_compose_project_name | default('wazuh') }}"
+    project_src: "{{ fabos_wazuh_default_docker_compose_dir }}"
+    files: "{{ ['wazuh.yml'] }}"
+    state: restarted
+    services:
+      - wazuh.manager
