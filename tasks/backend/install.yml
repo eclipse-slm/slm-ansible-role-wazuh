@@ -114,6 +114,19 @@
     - generate-indexer-certs.yml
     - wazuh.yml
 
+- name: WAZUH BACKEND | Find all ssl cert files
+  ansible.builtin.find:
+    paths: '{{ fabos_wazuh_default_config_dir }}/wazuh_indexer_ssl_certs'
+    file_type: file
+  register: wazuh_indexer_ssl_cert_files
+
+- name: WAZUH BACKEND | Ensure read permissions for all ssl cert files
+  ansible.builtin.file:
+    path: '{{ item.path }}'
+    state: file
+    mode: "0440"
+  loop: '{{ wazuh_indexer_ssl_cert_files.files }}'
+
 - name: WAZUH BACKEND | Insert monitord keep log days option in config file
   ansible.builtin.lineinfile:
     path: "/var/lib/docker/volumes/{{ fabos_wazuh_compose_project_name | default('wazuh') }}_wazuh_etc/_data/local_internal_options.conf"
