@@ -24,3 +24,6 @@ fabos_wazuh_default_compose_files:
 fabos_wazuh_default_dashboard_base_url: ""
 fabos_wazuh_default_dashboard_tls_enabled: false
 fabos_wazuh_default_dashboard_base_url: "" #"/wazuh/dashboard"
+
+## AGENT:
+fabos_wazuh_default_agent_config_dir: "/var/ossec/etc"
