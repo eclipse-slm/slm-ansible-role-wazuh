@@ -9,3 +9,8 @@
     state: restarted
     services:
       - wazuh.manager
+
+- name: Restart Agent
+  ansible.builtin.systemd:
+    name: wazuh-agent
+    state: restarted
