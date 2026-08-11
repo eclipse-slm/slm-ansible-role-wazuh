@@ -1,7 +1,7 @@
 ---
 # Purpose: assert that the instance really ended up in the expected state.
 # Molecule calls this playbook with `molecule verify`.
-# - ansible.builtin.import_playbook: ../install-wazuh-backend/verify.yml
+- ansible.builtin.import_playbook: ../install-wazuh-backend/verify.yml
 - ansible.builtin.import_playbook: ../install-wazuh-agent-ubuntu-24/verify.yml
 
 - name: Verify - Backend/Agend Deployment
