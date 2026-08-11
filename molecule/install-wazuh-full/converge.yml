@@ -8,6 +8,9 @@
   vars:
     fabos_wazuh_service: backend
     fabos_wazuh_service_state: present
+    fabos_wazuh_default_compose_ports:
+      - container_port: 5601
+        exposed_port: 5443
   tasks:
     - name: Include wazuh role
       ansible.builtin.include_role:
@@ -21,6 +24,9 @@
     fabos_wazuh_service: agent
     fabos_wazuh_service_state: present
     fabos_wazuh_manager_ip: "{{ hostvars[groups['wazuh_backend'][0]].ansible_host }}"
+    fabos_wazuh_agent_labels:
+      test_label_1: test_value_1
+      test_label_2: test_value_2
   tasks:
     - name: Include wazuh role
       ansible.builtin.include_role:
