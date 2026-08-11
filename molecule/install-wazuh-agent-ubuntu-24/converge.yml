@@ -1,13 +1,17 @@
 ---
 # Purpose: bring the instance to the desired state by running the role under test.
 # Molecule calls this playbook with `molecule converge`.
-- name: Converge
+- name: CONVERGE | INSTALL WAZUH AGENT
   hosts: all
   gather_facts: true # Disable if your role does not rely on facts
   become: true
   vars:
     fabos_wazuh_service: agent
     fabos_wazuh_service_state: present
+    fabos_wazuh_manager_ip: "1.2.3.4"
+    fabos_wazuh_agent_labels:
+      test_label_1: test_value_1
+      test_label_2: test_value_2
   tasks:
     - name: Apply role under test
       ansible.builtin.include_role:
