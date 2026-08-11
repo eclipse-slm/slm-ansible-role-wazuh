@@ -7,6 +7,8 @@
 
 ### Optional Inputs:
 # fabos_wazuh_manager_port: This must match the associated listening port configured on the Wazuh manager. (default: 1514)
+# fabos_wazuh_agent_labels: # default: {}
+#   label_key: label_value
 
 - name: WAZUH AGENT | Install required packages for Wazuh repository
   ansible.builtin.apt:
@@ -44,3 +46,12 @@
     name: wazuh-agent
     state: started
     enabled: true
+
+- name: WAZUH AGENT | Configure agent labels
+  when:
+    - (fabos_wazuh_agent_labels is defined)
+    - (fabos_wazuh_agent_labels | length > 0)
+  ansible.builtin.blockinfile:
+    path: "{{ fabos_wazuh_default_agent_config_dir }}/ossec.conf"
+    block: "{{ lookup('template', 'agent_labels.j2') }}"
+  notify: Restart Agent
