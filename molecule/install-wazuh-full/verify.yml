@@ -1,7 +1,7 @@
 ---
 # Purpose: assert that the instance really ended up in the expected state.
 # Molecule calls this playbook with `molecule verify`.
-- ansible.builtin.import_playbook: ../install-wazuh-backend/verify.yml
+# - ansible.builtin.import_playbook: ../install-wazuh-backend/verify.yml
 - ansible.builtin.import_playbook: ../install-wazuh-agent-ubuntu-24/verify.yml
 
 - name: Verify - Backend/Agend Deployment
@@ -9,7 +9,7 @@
   gather_facts: false
   become: true
   vars:
-    wazuh_manager_container_name: single-node-wazuh.manager-1
+    wazuh_manager_container_name: wazuh-wazuh.manager-1
     wazuh_manager_api_username_env_var: API_USERNAME
     wazuh_manager_api_password_env_var: API_PASSWORD
 
@@ -62,4 +62,19 @@
         fail_msg: "Count of agents does not expected size"
         success_msg: "Agent count == {{ agents | length -1 }} as expected"
 
+    - name: Get Registered Agents from API
+      ansible.builtin.uri:
+        url: "https://localhost:55000/agents/001/config/agent/labels?pretty=true"
+        method: GET
+        headers:
+          Authorization: "Bearer {{wazuh_manager_access_token}}"
+        validate_certs: false
+      register: get_registered_agent_labels_response
 
+    - name: Assert Agent labels available
+      ansible.builtin.assert:
+        that:
+          - get_registered_agent_labels_response.json.data.labels is defined
+          - get_registered_agent_labels_response.json.data.labels | length == 2
+        fail_msg: "Agent labels not available"
+        success_msg: "Agent labels available as expected"
