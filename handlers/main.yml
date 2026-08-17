@@ -1,6 +1,20 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # handlers file for wazuh
+- name: Start Wazuh Backend
+  community.docker.docker_compose_v2:
+    project_name: "{{ fabos_wazuh_compose_project_name | default('wazuh') }}"
+    project_src: "{{ fabos_wazuh_default_docker_compose_dir }}"
+    files: "{{ [item] }}"
+    state: present
+  register: compose_result
+  changed_when:
+    - compose_result is changed
+    - '"Found orphan containers" not in compose_result.stderr'
+  loop:
+    - generate-indexer-certs.yml
+    - wazuh.yml
+
 - name: Restart Manager
   community.docker.docker_compose_v2:
     project_name: "{{ fabos_wazuh_compose_project_name | default('wazuh') }}"
