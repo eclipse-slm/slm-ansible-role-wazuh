@@ -3,6 +3,9 @@
 
 ### Optional Inputs:
 # - fabos_wazuh_backend_monitord_keep_log_days: 30  # https://documentation.wazuh.com/current/user-manual/reference/internal-options.html#monitord (default: 1)
+# - fabos_wazuh_custom_malware_hashes: []  # List of custom malware hashes to add to the wazuh backend (default: [])
+# - fabos_wazuh_local_rule_groups: []  # List of custom local rules to add to the wazuh backend (default: [])
+# - fabos_wazuh_agent_config: ""  # Custom agent configuration to add to the wazuh backend (default: "")
 
 - name: WAZUH BACKEND | Set vm.max_map_count sysctl parameter
   ansible.posix.sysctl:
@@ -24,14 +27,6 @@
   register: cloned_repo
   ignore_errors: true
 
-- name: WAZUH BACKEND | Replace exposed ports in docker-compose file
-  ansible.builtin.lineinfile:
-    path: "{{ fabos_wazuh_default_single_node_compose_dir }}/docker-compose.yml"
-    regexp: '(\s+-\s)"*.*:{{ item.container_port }}"*'
-    line: '\g<1>{{ item.exposed_port }}:{{ item.container_port }}'
-    backrefs: true
-  loop: "{{ fabos_wazuh_default_compose_ports | default([]) }}"
-
 - name: WAZUH BACKEND | Ensure docker-compose and config directories exist
   ansible.builtin.file:
     path: "{{ item }}"
@@ -52,15 +47,15 @@
     - "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
   register: stat_results
 
-# TODO: Check correct copy (files are converted to dicts ??)
-- name: "WAZUH BACKEND | Copy wazuh compose file and config"
+- name: "WAZUH BACKEND | Copy wazuh compose files and config"
   when: not stat_results.results[i].stat.exists
   ansible.builtin.copy:
-    src: "{{ item.src }}"
+    src: "{{ item.src | default(omit) }}"
+    content: "{{ item.content | default(omit) }}"
     dest: "{{ item.dest }}"
     owner: root
     group: root
-    mode: "0755"
+    mode: "0644"
     remote_src: true
   loop_control:
     index_var: i
@@ -71,6 +66,26 @@
       dest: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ fabos_wazuh_default_compose_files[0] }}"
     - src: "{{ fabos_wazuh_default_single_node_compose_dir }}/{{ fabos_wazuh_default_compose_files[1] }}"
       dest: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
+
+- name: WAZUH BACKEND | Replace exposed ports in docker-compose file
+  ansible.builtin.lineinfile:
+    path: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
+    regexp: '(\s+-\s)"*.*:{{ item.container_port }}"*'
+    line: '\g<1>{{ item.exposed_port }}:{{ item.container_port }}'
+    backrefs: true
+  loop: "{{ fabos_wazuh_default_compose_ports | default([]) }}"
+
+- name: WAZUH BACKEND | Handle custom config files
+  ansible.builtin.include_tasks:
+    file: "{{ item }}"
+  vars:
+    fabos_wazuh_custom_malware_hash_list_file: "{{ fabos_wazuh_default_config_dir }}/malware-hashes"
+    fabos_wazuh_local_rules_file: "{{ fabos_wazuh_default_config_dir }}/local_rules.xml"
+    fabos_wazuh_agent_config_file: "{{ fabos_wazuh_default_config_dir }}/agent.conf"
+  loop:
+    - helper/handle_custom_malware_list.yml
+    - helper/handle_custom_local_rules.yml
+    - helper/handle_agent_config.yml
 
 - name: "WAZUH BACKEND | Modify Wazuh dashboard configuration"
   when: item.when
@@ -91,7 +106,7 @@
       state: absent
   register: dashboard_config_result
 
-- name: WAZUH BACKEND | Replace volume path on host
+- name: WAZUH BACKEND | Replace relative  host volume paths
   ansible.builtin.replace:
     path: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ item }}"
     regexp: '\./config'
@@ -114,18 +129,9 @@
     - generate-indexer-certs.yml
     - wazuh.yml
 
-- name: WAZUH BACKEND | Find all ssl cert files
-  ansible.builtin.find:
-    paths: '{{ fabos_wazuh_default_config_dir }}/wazuh_indexer_ssl_certs'
-    file_type: file
-  register: wazuh_indexer_ssl_cert_files
-
-- name: WAZUH BACKEND | Ensure read permissions for all ssl cert files
-  ansible.builtin.file:
-    path: '{{ item.path }}'
-    state: file
-    mode: "0444"
-  loop: '{{ wazuh_indexer_ssl_cert_files.files }}'
+- name: WAZUH BACKEND | Ensure cert file permissions are correct
+  ansible.builtin.include_tasks:
+    file: helper/fix_cert_file_permissions.yml
 
 - name: WAZUH BACKEND | Insert monitord keep log days option in config file
   ansible.builtin.lineinfile:

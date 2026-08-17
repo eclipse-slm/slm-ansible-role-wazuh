@@ -1,0 +1,33 @@
+---
+- name: WAZUH BACKEND | Stat local rules file
+  ansible.builtin.stat:
+    path: "{{ fabos_wazuh_local_rules_file }}"
+  register: stat_results
+
+- name: "WAZUH BACKEND | Copy local rules file to config directory"
+  when: not stat_results.stat.exists
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ fabos_wazuh_local_rules_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    remote_src: true
+
+- name: WAZUH BACKEND | Ensure custom rules file has entry under rulesets
+  ansible.builtin.blockinfile:
+    path: "{{ fabos_wazuh_local_rules_file }}"
+    block: "{{ rule_group }}"
+  loop: "{{ fabos_wazuh_local_rule_groups | default([]) }}"
+  loop_control:
+    loop_var: rule_group
+
+- name: WAZUH BACKEND | Add volume path for local rules file
+  ansible.builtin.lineinfile:
+    path: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
+    line: "{{ item.line }}"
+    regexp: "{{ item.line }}"
+    insertafter: "volumes:"
+    firstmatch: true
+  loop:
+    - line: "      - {{ fabos_wazuh_local_rules_file }}:/var/ossec/etc/rules/local_rules.xml"
