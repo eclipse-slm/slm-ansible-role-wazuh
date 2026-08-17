@@ -7,4 +7,4 @@
 - src: "git+https://github.com/eclipse-slm/slm-ansible-role-docker"
   scm: git
   version: main
-  name: fabos.slm-ansible-role-docker
+  name: eclipse-slm.docker

@@ -10,6 +10,11 @@ roles:
     version: main
     name: eclipse-slm.docker
 
+  - src: "git+https://github.com/eclipse-slm/slm-ansible-role-wazuh-client"
+    scm: git
+    version: main
+    name: eclipse-slm.wazuh_client
+
 collections:
   - name: community.docker
     version: ">=3.0.0"
