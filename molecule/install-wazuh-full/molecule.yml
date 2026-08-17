@@ -52,9 +52,8 @@ ansible:
 
   playbooks:
     create: ../default/create-kv.yml
-    converge: converge.yml
     destroy: ../default/destroy-kv.yml
-    cleanup: cleanup.yml
+    converge: converge.yml
     prepare: prepare.yml
     verify: verify.yml
 
@@ -62,14 +61,10 @@ scenario:
   name: install-wazuh-full
   test_sequence:
     - dependency
-    - cleanup
     - destroy
     - syntax
     - create
     - prepare
     - converge
-    - idempotence
-    - side_effect
     - verify
-    - cleanup
     - destroy

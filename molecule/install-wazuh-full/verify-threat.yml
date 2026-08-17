@@ -1,0 +1,55 @@
+- name: Verify - Agent Threat Detection
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    wazuh_backend_ip: "{{ hostvars[groups['wazuh_backend'][0]]['ansible_host'] }}"
+
+    wazuh_manager_api_username: wazuh-wui
+    wazuh_manager_api_password: MyS3cr37P450r.*-
+
+    wazuh_client_indexer_base_url: "https://{{ wazuh_backend_ip }}:9200"
+    wazuh_client_indexer_username: admin
+    wazuh_client_indexer_password: SecretPassword
+    wazuh_client_agent_ip: "{{ hostvars[groups['wazuh_agent'][0]]['ansible_host'] }}"
+  tasks:
+    - name: Create EICAR test file on agent
+      ansible.builtin.raw: |
+        printf '%s' 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' > /tmp/eicar.com
+      delegate_to: "{{ groups['wazuh_agent'][0] }}"
+      become: true
+
+    - name: Wait to allow Wazuh to detect the EICAR test file
+      ansible.builtin.pause:
+        seconds: 20
+
+    - name: Get Alerts of agent
+      ansible.builtin.include_role:
+        name: eclipse-slm.wazuh_client
+        tasks_from: get_alerts_by_agent_ip
+
+    - name: Print detected Alert count
+      ansible.builtin.debug:
+        msg: "'{{ wazuh_client_alerts.hits.total.value }}' alerts have been found."
+
+    - name: Assert EICAR alert is present
+      ansible.builtin.assert:
+        that:
+          - alert_count > 0
+          - "'EICAR' in rule_description"
+        fail_msg: "EICAR alert not found in alerts."
+      vars:
+        alert_count: "{{ wazuh_client_alerts.hits.total.value }}"
+        rule_description: "{{ wazuh_client_alerts.hits.hits[0]._source.rule.description }}"
+
+    - name: Delete EICAR Testfile
+      ansible.builtin.file:
+        path: "/tmp/eicar.com"
+        state: absent
+      delegate_to: "{{ groups['wazuh_agent'][0] }}"
+      become: true
+
+    - name: Delete Alerts of agent
+      ansible.builtin.include_role:
+        name: eclipse-slm.wazuh_client
+        tasks_from: delete_alerts_by_agent_ip

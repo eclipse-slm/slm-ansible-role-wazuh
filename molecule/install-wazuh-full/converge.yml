@@ -11,10 +11,15 @@
     fabos_wazuh_default_compose_ports:
       - container_port: 5601
         exposed_port: 5443
+    fabos_wazuh_custom_malware_hashes:
+      - 44d88612fea8a8f36de82e1278abb02f:EICAR-Test-File
+    fabos_wazuh_local_rule_groups:
+      - "{{ lookup('file', 'local_rules.xml') | string }}"        
+    fabos_wazuh_agent_config: "{{ lookup('file', 'agent.conf') | string }}"
   tasks:
-    - name: Include wazuh role
+    - name: Include wazuh backend role
       ansible.builtin.include_role:
-        name: wazuh
+        name: ../../../slm-ansible-role-wazuh
 
 - name: Converge - Agent
   hosts: wazuh_agent
@@ -28,6 +33,6 @@
       test_label_1: test_value_1
       test_label_2: test_value_2
   tasks:
-    - name: Include wazuh role
+    - name: Include wazuh agent role
       ansible.builtin.include_role:
-        name: wazuh
+        name: ../../../slm-ansible-role-wazuh

@@ -1,0 +1,12 @@
+<group name="syscheck,malware,">
+  <rule id="100200" level="12">
+    <if_sid>550,554</if_sid>
+    <list field="md5" lookup="match_key">etc/lists/malware-hashes</list>
+    <description>EICAR-Testdatei erkannt (Hash): $(file)</description>
+  </rule>
+  <rule id="100201" level="10">
+    <if_sid>550,553,554</if_sid>
+    <field name="file" type="pcre2">(?i)eicar</field>
+    <description>EICAR-Testdatei erkannt (Name): $(file)</description>
+  </rule>
+</group>

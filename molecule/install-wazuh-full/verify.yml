@@ -4,7 +4,7 @@
 - ansible.builtin.import_playbook: ../install-wazuh-backend/verify.yml
 - ansible.builtin.import_playbook: ../install-wazuh-agent-ubuntu-24/verify.yml
 
-- name: Verify - Backend/Agend Deployment
+- name: Verify - Backend/Agent Deployment
   hosts: wazuh_backend
   gather_facts: false
   become: true
@@ -62,7 +62,7 @@
         fail_msg: "Count of agents does not expected size"
         success_msg: "Agent count == {{ agents | length -1 }} as expected"
 
-    - name: Get Registered Agents from API
+    - name: Get Labels of Registered Agents from API
       ansible.builtin.uri:
         url: "https://localhost:55000/agents/001/config/agent/labels?pretty=true"
         method: GET
@@ -70,6 +70,8 @@
           Authorization: "Bearer {{wazuh_manager_access_token}}"
         validate_certs: false
       register: get_registered_agent_labels_response
+      retries: 5
+      until: get_registered_agent_labels_response.status == 200
 
     - name: Assert Agent labels available
       ansible.builtin.assert:
@@ -78,3 +80,5 @@
           - get_registered_agent_labels_response.json.data.labels | length == 2
         fail_msg: "Agent labels not available"
         success_msg: "Agent labels available as expected"
+
+- ansible.builtin.import_playbook: ./verify-threat.yml
