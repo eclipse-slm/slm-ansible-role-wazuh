@@ -13,15 +13,19 @@
     wazuh_client_indexer_password: SecretPassword
     wazuh_client_agent_ip: "{{ hostvars[groups['wazuh_agent'][0]]['ansible_host'] }}"
   tasks:
+    - name: Wait static time for agents to be ready
+      ansible.builtin.pause:
+        seconds: 30
+
     - name: Create EICAR test file on agent
       ansible.builtin.raw: |
         printf '%s' 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' > /tmp/eicar.com
       delegate_to: "{{ groups['wazuh_agent'][0] }}"
       become: true
 
-    - name: Wait to allow Wazuh to detect the EICAR test file
+    - name: Wait static time to allow Wazuh to detect the EICAR test file
       ansible.builtin.pause:
-        seconds: 20
+        seconds: 30
 
     - name: Get Alerts of agent
       ansible.builtin.include_role:
