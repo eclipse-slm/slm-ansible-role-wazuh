@@ -152,7 +152,7 @@ molecule -s <scenario> syntax
 
 ## Dependencies
 
-The role does not declare Galaxy role dependencies in `meta/main.yml`. The development and Molecule setup downloads `fabos.molecule_kubevirt` and `fabos.slm-ansible-role-docker` from the roles listed in [`requirements.yml`](requirements.yml).
+The role does not declare Galaxy role dependencies in `meta/main.yml`. The development and Molecule setup downloads `fabos.molecule_kubevirt` and `eclipse-slm.docker` from the roles listed in [`requirements.yml`](requirements.yml).
 
 ## License
 

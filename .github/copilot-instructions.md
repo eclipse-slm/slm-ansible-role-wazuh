@@ -102,7 +102,7 @@ This is an **Ansible Galaxy role** that installs Wazuh (a security monitoring pl
 1. Downloads Wazuh's official Docker Compose from GitHub (versioned via tag)
 2. Creates `/opt/wazuh` directory
 3. Starts Wazuh stack with `community.docker.docker_compose_v2`
-4. Includes `fabos.slm-ansible-role-docker` in prepare phase (Molecule)
+4. Includes `eclipse-slm.docker` in prepare phase (Molecule)
 
 ### Test Infrastructure
 
