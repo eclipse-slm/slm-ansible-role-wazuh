@@ -1,0 +1,76 @@
+- name: Verify - Docker Volume Scanning
+  hosts: wazuh_agent
+  gather_facts: false
+  become: true
+  vars:
+    docker_volume_test_path: /var/lib/docker/volumes/my_volume/_data/testfile
+
+    wazuh_client_manager_base_url: "https://{{ hostvars['ansible-role-wazuh-wazuh-backend'].ansible_host }}:55000"
+    wazuh_client_manager_username: "wazuh-wui"
+    wazuh_client_manager_password: "MyS3cr37P450r.*-"
+
+    wazuh_client_indexer_base_url: "https://{{ hostvars['ansible-role-wazuh-wazuh-backend'].ansible_host }}:9200"
+    wazuh_client_indexer_username: admin
+    wazuh_client_indexer_password: SecretPassword
+  tasks:
+    - name: Ensure Docker volume folder
+      ansible.builtin.file:
+        path: "{{ docker_volume_test_path | dirname }}"
+        state: directory
+        mode: '0755'
+
+    - name: Wait for Wazuh Agents to be connected
+      ansible.builtin.pause:
+        seconds: 30
+
+    - name: Touch test file in docker volume folder
+      ansible.builtin.file:
+        path: "{{ docker_volume_test_path }}"
+        state: touch
+        mode: '0644'
+
+    - name: Remove test file in docker volume folder
+      ansible.builtin.file:
+        path: "{{ docker_volume_test_path }}"
+        state: absent
+
+    - name: Wait for Wazuh FIM events to be processed
+      ansible.builtin.pause:
+        seconds: 30
+
+    - name: Assert docker volume event exists in Wazuh FIM events
+      delegate_to: localhost
+      run_once: true
+      block:
+        - name: Get Wazu manager access token
+          ansible.builtin.include_role:
+            name: eclipse-slm.wazuh_client
+            tasks_from: get_manager_access_token
+
+        - name: Get Wazuh FIM events for a specific agent
+          ansible.builtin.uri:
+            url: "{{ wazuh_client_indexer_base_url }}/wazuh-alerts-*/_search"
+            method: GET
+            user: "{{ wazuh_client_indexer_username }}"
+            password: "{{ wazuh_client_indexer_password }}"
+            force_basic_auth: true
+            validate_certs: false
+            body_format: json
+            body:
+              query:
+                bool:
+                  must:
+                    - term:
+                        agent.ip: "{{ hostvars['ansible-role-wazuh-wazuh-agent-1'].ansible_host }}"
+                    - term:
+                        rule.groups: "syscheck"
+                    - term:
+                        syscheck.path: "{{ docker_volume_test_path }}"
+          register: wazuh_fim_events
+
+        - name: Assert docker volume events exist in Wazuh FIM events
+          ansible.builtin.assert:
+            that:
+              - wazuh_fim_events.json.hits.total.value > 0
+            fail_msg: "No FIM events found for the docker volume test file."
+            success_msg: "FIM events found for the docker volume test file."
