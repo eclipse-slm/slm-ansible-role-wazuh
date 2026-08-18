@@ -1,84 +1,17 @@
 ---
 # Purpose: assert that the instance really ended up in the expected state.
 # Molecule calls this playbook with `molecule verify`.
-- ansible.builtin.import_playbook: ../install-wazuh-backend/verify.yml
-- ansible.builtin.import_playbook: ../install-wazuh-agent-ubuntu-24/verify.yml
+- name: Verify - Backend is setup correctly
+  ansible.builtin.import_playbook: ../install-wazuh-backend/verify.yml
 
-- name: Verify - Backend/Agent Deployment
-  hosts: wazuh_backend
-  gather_facts: false
-  become: true
-  vars:
-    wazuh_manager_container_name: wazuh-wazuh.manager-1
-    wazuh_manager_api_username_env_var: API_USERNAME
-    wazuh_manager_api_password_env_var: API_PASSWORD
+- name: Verify - Agents are setup correctly
+  ansible.builtin.import_playbook: ../install-wazuh-agent-ubuntu-24/verify.yml
 
-    wazuh_agent_group_name: 'wazuh_agent'
-  tasks:
-    - name: Get Container details
-      community.docker.docker_container_info:
-        name: "{{ wazuh_manager_container_name }}"
-      register: container_details
+- name: Verify - Backend/Agent connection is working
+  ansible.builtin.import_playbook: ./verify-agents.yml
 
-    - name: Set API Credentials
-      ansible.builtin.set_fact:
-        wazuh_manager_api_username: "{{ container_details.container.Config.Env | select('match', wazuh_manager_api_username_env_var) | first | split('=') | last }}"
-        wazuh_manager_api_password: "{{ container_details.container.Config.Env | select('match', wazuh_manager_api_password_env_var) | first | split('=') | last }}"
+- name: Verify - Threat Detection is working
+  ansible.builtin.import_playbook: ./verify-threat.yml
 
-    - name: Get Access Token
-      ansible.builtin.uri:
-        url: "https://localhost:55000/security/user/authenticate"
-        method: POST
-        user: "{{ wazuh_manager_api_username }}"
-        password: "{{ wazuh_manager_api_password }}"
-        force_basic_auth: true
-        validate_certs: false
-        status_code: [200]
-      register: get_access_token_response
-
-    - name: Set Access Token
-      ansible.builtin.set_fact:
-        wazuh_manager_access_token: "{{ get_access_token_response.json.data.token }}"
-
-    - name: Get Registered Agents from API
-      ansible.builtin.uri:
-        url: "https://localhost:55000/agents"
-        method: GET
-        headers:
-          Authorization: "Bearer {{wazuh_manager_access_token}}"
-        validate_certs: false
-      register: get_registered_agents_response
-
-    - name: Extract Agent Data from response
-      ansible.builtin.set_fact:
-        agents: "{{ get_registered_agents_response.json.data.affected_items }}"
-        expected_agent_count: "{{ groups[wazuh_agent_group_name] | length + 1 }}"   # "+1" because manager is also included in agents list
-
-
-    - name: Assert Agent count matches expected value
-      ansible.builtin.assert:
-        that:
-          - agents | length == expected_agent_count
-        fail_msg: "Count of agents does not expected size"
-        success_msg: "Agent count == {{ agents | length -1 }} as expected"
-
-    - name: Get Labels of Registered Agents from API
-      ansible.builtin.uri:
-        url: "https://localhost:55000/agents/001/config/agent/labels?pretty=true"
-        method: GET
-        headers:
-          Authorization: "Bearer {{wazuh_manager_access_token}}"
-        validate_certs: false
-      register: get_registered_agent_labels_response
-      retries: 5
-      until: get_registered_agent_labels_response.status == 200
-
-    - name: Assert Agent labels available
-      ansible.builtin.assert:
-        that:
-          - get_registered_agent_labels_response.json.data.labels is defined
-          - get_registered_agent_labels_response.json.data.labels | length == 2
-        fail_msg: "Agent labels not available"
-        success_msg: "Agent labels available as expected"
-
-- ansible.builtin.import_playbook: ./verify-threat.yml
+- name: Verify - Docker Volume Scanning is working
+  ansible.builtin.import_playbook: ./verify-docker.yml
