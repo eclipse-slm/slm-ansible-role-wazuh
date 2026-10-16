@@ -67,6 +67,14 @@
     - src: "{{ fabos_wazuh_default_single_node_compose_dir }}/{{ fabos_wazuh_default_compose_files[1] }}"
       dest: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
 
+- name: WAZUH BACKEND | Copy wazuh compose overwrite file
+  ansible.builtin.copy:
+    src: wazuh.overwrite.yml
+    dest: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.overwrite.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: WAZUH BACKEND | Replace exposed ports in docker-compose file
   ansible.builtin.lineinfile:
     path: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
@@ -106,7 +114,7 @@
       state: absent
   register: dashboard_config_result
 
-- name: WAZUH BACKEND | Replace relative  host volume paths
+- name: WAZUH BACKEND | Replace relative host volume paths
   ansible.builtin.replace:
     path: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ item }}"
     regexp: '\./config'
@@ -119,7 +127,7 @@
   community.docker.docker_compose_v2:
     project_name: "{{ fabos_wazuh_compose_project_name | default('wazuh') }}"
     project_src: "{{ fabos_wazuh_default_docker_compose_dir }}"
-    files: "{{ [item] }}"
+    files: "{{ item }}"
     state: present
   register: compose_result
   changed_when:
@@ -127,7 +135,7 @@
     - '"Found orphan containers" not in compose_result.stderr'
   loop:
     - generate-indexer-certs.yml
-    - wazuh.yml
+    - ["wazuh.yml", "wazuh.overwrite.yml"]
 
 - name: WAZUH BACKEND | Ensure cert file permissions are correct
   ansible.builtin.include_tasks:
