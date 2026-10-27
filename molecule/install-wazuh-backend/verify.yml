@@ -45,3 +45,25 @@
         label: "Port {{ item.port }}"
       register: port_check_result
       changed_when: false
+
+    - name: Verify indexer retention policy exists
+      ansible.builtin.uri:
+        url: "https://localhost:9200/_plugins/_ism/policies/fabos-wazuh-retention"
+        user: admin
+        password: SecretPassword
+        force_basic_auth: true
+        validate_certs: false
+      register: retention_policy
+      failed_when: retention_policy.json.policy.states[1].actions[0].delete is not defined
+
+    - name: Verify indexer disk watermarks are enabled
+      ansible.builtin.uri:
+        url: "https://localhost:9200/_cluster/settings?include_defaults=true&flat_settings=true"
+        user: admin
+        password: SecretPassword
+        force_basic_auth: true
+        validate_certs: false
+      register: cluster_settings
+      failed_when: cluster_settings.json.defaults[disk_threshold_setting] | default('') | string | lower != 'true'
+      vars:
+        disk_threshold_setting: cluster.routing.allocation.disk.threshold_enabled
