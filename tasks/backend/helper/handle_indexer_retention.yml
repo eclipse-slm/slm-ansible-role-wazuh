@@ -1,0 +1,81 @@
+---
+# The indexer uses a self-signed certificate issued for wazuh.indexer, so certificate validation is disabled for localhost access
+- name: WAZUH BACKEND | Wait for indexer API to become available
+  ansible.builtin.uri:
+    url: "{{ fabos_wazuh_backend_indexer_url }}/_cluster/health"
+    user: "{{ fabos_wazuh_backend_indexer_username }}"
+    password: "{{ fabos_wazuh_backend_indexer_password }}"
+    force_basic_auth: true
+    validate_certs: false
+  register: __fabos_wazuh_indexer_health
+  until: __fabos_wazuh_indexer_health.status == 200
+  retries: 30
+  delay: 10
+
+- name: WAZUH BACKEND | Get current indexer retention policy
+  ansible.builtin.uri:
+    url: "{{ fabos_wazuh_backend_indexer_url }}/_plugins/_ism/policies/{{ fabos_wazuh_backend_indexer_retention_policy_id }}"
+    user: "{{ fabos_wazuh_backend_indexer_username }}"
+    password: "{{ fabos_wazuh_backend_indexer_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [200, 404]
+  register: __fabos_wazuh_retention_policy_current
+
+# The policy description carries a hash of the desired policy, so changes are detected without comparing server-generated fields
+- name: WAZUH BACKEND | Create or update indexer retention policy
+  ansible.builtin.uri:
+    url: >-
+      {{ fabos_wazuh_backend_indexer_url }}/_plugins/_ism/policies/{{ fabos_wazuh_backend_indexer_retention_policy_id }}{{
+      ('?if_seq_no=' ~ __fabos_wazuh_retention_policy_current.json._seq_no
+      ~ '&if_primary_term=' ~ __fabos_wazuh_retention_policy_current.json._primary_term)
+      if __fabos_wazuh_retention_policy_current.status == 200 else '' }}
+    method: PUT
+    user: "{{ fabos_wazuh_backend_indexer_username }}"
+    password: "{{ fabos_wazuh_backend_indexer_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    body_format: json
+    body:
+      policy: "{{ __fabos_wazuh_retention_policy | combine({'description': __fabos_wazuh_retention_policy_description}) }}"
+    status_code: [200, 201]
+  when: >-
+    __fabos_wazuh_retention_policy_current.status == 404
+    or __fabos_wazuh_retention_policy_current.json.policy.description != __fabos_wazuh_retention_policy_description
+  changed_when: true
+  notify: Change Indexer Retention Policy On Managed Indices
+  vars:
+    __fabos_wazuh_retention_policy_description: >-
+      Managed by Ansible role fabos.wazuh ({{ __fabos_wazuh_retention_policy | to_json | hash('sha1') }})
+    __fabos_wazuh_retention_policy:
+      default_state: hot
+      states:
+        - name: hot
+          actions: []
+          transitions:
+            - state_name: delete
+              conditions:
+                min_index_age: "{{ fabos_wazuh_backend_indexer_retention }}"
+        - name: delete
+          actions:
+            - delete: {}
+          transitions: []
+      ism_template:
+        - index_patterns: "{{ fabos_wazuh_backend_indexer_retention_index_patterns }}"
+          priority: 100
+
+- name: WAZUH BACKEND | Attach retention policy to existing unmanaged indices
+  ansible.builtin.uri:
+    url: "{{ fabos_wazuh_backend_indexer_url }}/_plugins/_ism/add/{{ item }}"
+    method: POST
+    user: "{{ fabos_wazuh_backend_indexer_username }}"
+    password: "{{ fabos_wazuh_backend_indexer_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    body_format: json
+    body:
+      policy_id: "{{ fabos_wazuh_backend_indexer_retention_policy_id }}"
+    status_code: [200, 404]
+  register: __fabos_wazuh_retention_policy_add
+  changed_when: (__fabos_wazuh_retention_policy_add.json.updated_indices | default(0) | int) > 0
+  loop: "{{ fabos_wazuh_backend_indexer_retention_index_patterns }}"
