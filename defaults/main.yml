@@ -25,5 +25,31 @@ fabos_wazuh_default_dashboard_base_url: ""
 fabos_wazuh_default_dashboard_tls_enabled: false
 fabos_wazuh_default_dashboard_base_url: "" #"/wazuh/dashboard"
 
+## BACKEND STORAGE:
+# Rotation of the docker json-file logs of all backend containers
+fabos_wazuh_backend_docker_log_max_size: "50m"
+fabos_wazuh_backend_docker_log_max_file: 3
+# Minimum alert level written to alerts.log/alerts.json and forwarded to the indexer
+fabos_wazuh_backend_log_alert_level: 3
+# Indexer disk watermarks; flood stage makes indices read-only instead of filling the disk
+fabos_wazuh_backend_indexer_disk_threshold_enabled: true
+fabos_wazuh_backend_indexer_disk_watermark_low: "85%"
+fabos_wazuh_backend_indexer_disk_watermark_high: "90%"
+fabos_wazuh_backend_indexer_disk_watermark_flood_stage: "95%"
+# ISM retention (min_index_age, e.g. "7d"); empty string disables index retention management
+fabos_wazuh_backend_indexer_retention: "7d"
+fabos_wazuh_backend_indexer_retention_policy_id: "fabos-wazuh-retention"
+fabos_wazuh_backend_indexer_retention_index_patterns:
+  - "wazuh-alerts-*"
+  - "wazuh-archives-*"
+  - "wazuh-monitoring-*"
+  - "wazuh-statistics-*"
+fabos_wazuh_backend_indexer_username: "admin"
+fabos_wazuh_backend_indexer_password: "SecretPassword"
+fabos_wazuh_backend_indexer_url: >-
+  https://localhost:{{ fabos_wazuh_default_compose_ports | default([])
+  | selectattr('container_port', 'equalto', 9200)
+  | map(attribute='exposed_port') | first | default(9200) }}
+
 ## AGENT:
 fabos_wazuh_default_agent_config_dir: "/var/ossec/etc"
