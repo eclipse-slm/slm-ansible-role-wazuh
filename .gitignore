@@ -1,4 +1,5 @@
 local.env
 .idea
+.ansible
 
 molecule/*/roles/*
