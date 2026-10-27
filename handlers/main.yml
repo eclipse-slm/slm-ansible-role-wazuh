@@ -28,3 +28,27 @@
   ansible.builtin.systemd:
     name: wazuh-agent
     state: restarted
+
+- name: Restart Indexer
+  community.docker.docker_compose_v2:
+    project_name: "{{ fabos_wazuh_compose_project_name | default('wazuh') }}"
+    project_src: "{{ fabos_wazuh_default_docker_compose_dir }}"
+    files: "{{ ['wazuh.yml'] }}"
+    state: restarted
+    services:
+      - wazuh.indexer
+
+- name: Change Indexer Retention Policy On Managed Indices
+  ansible.builtin.uri:
+    url: "{{ fabos_wazuh_backend_indexer_url }}/_plugins/_ism/change_policy/{{ item }}"
+    method: POST
+    user: "{{ fabos_wazuh_backend_indexer_username }}"
+    password: "{{ fabos_wazuh_backend_indexer_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    body_format: json
+    body:
+      policy_id: "{{ fabos_wazuh_backend_indexer_retention_policy_id }}"
+    status_code: [200, 404]
+  loop: "{{ fabos_wazuh_backend_indexer_retention_index_patterns }}"
+  retries: 5
