@@ -1,0 +1,18 @@
+---
+# {{ ansible_managed }}
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "{{ fabos_wazuh_backend_docker_log_max_size }}"
+    max-file: "{{ fabos_wazuh_backend_docker_log_max_file }}"
+
+services:
+  wazuh.manager:
+    mem_limit: 3g
+    logging: *default-logging
+  wazuh.indexer:
+    mem_limit: 2g
+    logging: *default-logging
+  wazuh.dashboard:
+    mem_limit: 1g
+    logging: *default-logging

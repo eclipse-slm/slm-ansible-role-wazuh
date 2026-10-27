@@ -6,6 +6,7 @@
 # - fabos_wazuh_custom_malware_hashes: []  # List of custom malware hashes to add to the wazuh backend (default: [])
 # - fabos_wazuh_local_rule_groups: []  # List of custom local rules to add to the wazuh backend (default: [])
 # - fabos_wazuh_agent_config: ""  # Custom agent configuration to add to the wazuh backend (default: "")
+# - fabos_wazuh_backend_indexer_retention / _disk_* / _docker_log_* / _log_alert_level: storage controls, see defaults/main.yml
 
 - name: WAZUH BACKEND | Set vm.max_map_count sysctl parameter
   ansible.posix.sysctl:
@@ -67,9 +68,9 @@
     - src: "{{ fabos_wazuh_default_single_node_compose_dir }}/{{ fabos_wazuh_default_compose_files[1] }}"
       dest: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.yml"
 
-- name: WAZUH BACKEND | Copy wazuh compose overwrite file
-  ansible.builtin.copy:
-    src: wazuh.overwrite.yml
+- name: WAZUH BACKEND | Template wazuh compose overwrite file
+  ansible.builtin.template:
+    src: wazuh.overwrite.yml.j2
     dest: "{{ fabos_wazuh_default_docker_compose_dir }}/wazuh.overwrite.yml"
     owner: root
     group: root
@@ -114,6 +115,27 @@
       state: absent
   register: dashboard_config_result
 
+- name: WAZUH BACKEND | Configure indexer disk watermarks
+  ansible.builtin.lineinfile:
+    path: "{{ fabos_wazuh_default_config_dir }}/wazuh_indexer/wazuh.indexer.yml"
+    regexp: "^{{ item.key | regex_escape }}:"
+    line: "{{ item.key }}: {{ item.value }}"
+  loop: "{{ __fabos_wazuh_indexer_disk_settings | dict2items }}"
+  vars:
+    __fabos_wazuh_indexer_disk_settings:
+      cluster.routing.allocation.disk.threshold_enabled: "{{ fabos_wazuh_backend_indexer_disk_threshold_enabled | bool | lower }}"
+      cluster.routing.allocation.disk.watermark.low: '"{{ fabos_wazuh_backend_indexer_disk_watermark_low }}"'
+      cluster.routing.allocation.disk.watermark.high: '"{{ fabos_wazuh_backend_indexer_disk_watermark_high }}"'
+      cluster.routing.allocation.disk.watermark.flood_stage: '"{{ fabos_wazuh_backend_indexer_disk_watermark_flood_stage }}"'
+  notify: Restart Indexer
+
+- name: WAZUH BACKEND | Set minimum alert level for logged alerts
+  ansible.builtin.replace:
+    path: "{{ fabos_wazuh_default_config_dir }}/wazuh_cluster/wazuh_manager.conf"
+    regexp: '<log_alert_level>\d+</log_alert_level>'
+    replace: "<log_alert_level>{{ fabos_wazuh_backend_log_alert_level | int }}</log_alert_level>"
+  notify: Restart Manager
+
 - name: WAZUH BACKEND | Replace relative host volume paths
   ansible.builtin.replace:
     path: "{{ fabos_wazuh_default_docker_compose_dir }}/{{ item }}"
@@ -148,3 +170,10 @@
     line: "monitord.keep_log_days={{ fabos_wazuh_backend_monitord_keep_log_days | default(1) }}"
     create: true
   notify: Restart Manager
+
+- name: WAZUH BACKEND | Handle indexer retention policy
+  ansible.builtin.include_tasks:
+    file: helper/handle_indexer_retention.yml
+  when:
+    - fabos_wazuh_backend_indexer_retention | length > 0
+    - not ansible_check_mode
