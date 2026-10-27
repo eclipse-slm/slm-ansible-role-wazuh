@@ -56,6 +56,27 @@ The role fails early if either variable contains an unsupported value.
 | `fabos_wazuh_default_dashboard_base_url` | `""` | Optional Wazuh dashboard base path. |
 | `fabos_wazuh_default_dashboard_tls_enabled` | `false` | Whether dashboard TLS should remain enabled. |
 
+### Backend storage variables
+
+The upstream single-node stack keeps indexed data forever, turns off the indexer's disk watermarks and lets Docker logs grow without limit, so a busy backend can fill the host disk quickly. The role ships safer defaults:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `fabos_wazuh_backend_indexer_retention` | `"7d"` | Age after which indices matching the retention patterns are deleted by an ISM policy. Use day units, because Wazuh creates daily indices. Set to `""` to stop managing retention. |
+| `fabos_wazuh_backend_indexer_retention_index_patterns` | `wazuh-alerts-*`, `wazuh-archives-*`, `wazuh-monitoring-*`, `wazuh-statistics-*` | Index patterns the retention policy applies to. New and existing indices are both attached. |
+| `fabos_wazuh_backend_indexer_retention_policy_id` | `fabos-wazuh-retention` | ISM policy name. |
+| `fabos_wazuh_backend_indexer_disk_threshold_enabled` | `true` | Turns on disk-based shard allocation in the indexer (upstream: `false`). |
+| `fabos_wazuh_backend_indexer_disk_watermark_low` | `"85%"` | Low disk watermark. |
+| `fabos_wazuh_backend_indexer_disk_watermark_high` | `"90%"` | High disk watermark. |
+| `fabos_wazuh_backend_indexer_disk_watermark_flood_stage` | `"95%"` | At this level indices become read-only, so the disk does not fill completely. The indexer lifts the block once usage falls below the high watermark. |
+| `fabos_wazuh_backend_docker_log_max_size` | `"50m"` | Maximum size of one Docker `json-file` log file per backend container. |
+| `fabos_wazuh_backend_docker_log_max_file` | `3` | Number of rotated Docker log files kept per backend container. |
+| `fabos_wazuh_backend_log_alert_level` | `3` | Lowest alert level that is logged and indexed. Raising it (for example to `5` or `7`) cuts alert volume a lot. |
+| `fabos_wazuh_backend_indexer_url` | `https://localhost:<9200 or mapped port>` | Indexer API URL used to manage the retention policy. |
+| `fabos_wazuh_backend_indexer_username` / `_password` | `admin` / `SecretPassword` | Indexer API credentials. |
+
+The retention policy is applied through the indexer REST API after the stack has started, and is skipped in check mode.
+
 The backend uses these default locations:
 
 - Downloaded Wazuh Docker repository: `/tmp/wazuh`
