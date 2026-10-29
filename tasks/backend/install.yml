@@ -177,3 +177,6 @@
   when:
     - fabos_wazuh_backend_indexer_retention | length > 0
     - not ansible_check_mode
+
+- name: WAZUH BACKEND | Run handler now
+  ansible.builtin.meta: flush_handlers
