@@ -19,9 +19,26 @@
         state: directory
         mode: '0755'
 
+    - name: Get Wazuh manager access token
+      ansible.builtin.include_role:
+        name: eclipse-slm.wazuh_client
+        tasks_from: get_manager_access_token
+        apply:
+          delegate_to: localhost
+          run_once: true
+
     - name: Wait for Wazuh Agents to be connected
-      ansible.builtin.pause:
-        seconds: 30
+      delegate_to: localhost
+      ansible.builtin.uri:
+        url: "{{ wazuh_client_manager_base_url }}/agents?status=active&q=ip={{ ansible_host }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ wazuh_client_manager_access_token }}"
+        validate_certs: false
+      register: wazuh_active_agents
+      until: wazuh_active_agents.json.data.total_affected_items | int > 0
+      retries: 30
+      delay: 10
 
     - name: Touch test file in docker volume folder
       ansible.builtin.file:
@@ -34,19 +51,10 @@
         path: "{{ docker_volume_test_path }}"
         state: absent
 
-    - name: Wait for Wazuh FIM events to be processed
-      ansible.builtin.pause:
-        seconds: 30
-
     - name: Assert docker volume event exists in Wazuh FIM events
       delegate_to: localhost
       run_once: true
       block:
-        - name: Get Wazu manager access token
-          ansible.builtin.include_role:
-            name: eclipse-slm.wazuh_client
-            tasks_from: get_manager_access_token
-
         - name: Get Wazuh FIM events for a specific agent
           ansible.builtin.uri:
             url: "{{ wazuh_client_indexer_base_url }}/wazuh-alerts-*/_search"
@@ -67,6 +75,9 @@
                     - term:
                         syscheck.path: "{{ docker_volume_test_path }}"
           register: wazuh_fim_events
+          until: wazuh_fim_events.json.hits.total.value > 0
+          retries: 5
+          delay: 60
 
         - name: Assert docker volume events exist in Wazuh FIM events
           ansible.builtin.assert:
