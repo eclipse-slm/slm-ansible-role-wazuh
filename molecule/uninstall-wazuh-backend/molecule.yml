@@ -25,6 +25,8 @@ ansible:
   env:
     ANSIBLE_FORCE_COLOR: "1"
     ANSIBLE_LOAD_CALLBACK_PLUGINS: "1"
+    # kubevirt by default; MOLECULE_DRIVER=openstack selects the fallback
+    MOLECULE_DRIVER: ${MOLECULE_DRIVER:-kubevirt}
 
   executor:
     backend: ansible-playbook
@@ -32,15 +34,10 @@ ansible:
       ansible_playbook:
         - --diff
         - --force-handlers
-        - --inventory=/path/to/inventory.yml
-      ansible_navigator:
-        - --mode stdout
-        - --pull-policy missing
-        - --execution-environment-image ghcr.io/ansible/community-ansible-dev-tools:latest
 
   playbooks:
-    create: ../default/create-kv.yml
-    destroy: ../default/destroy-kv.yml
+    create: ../default/create.yml
+    destroy: ../default/destroy.yml
     prepare: prepare.yml
     converge: converge.yml
     verify: verify.yml

@@ -15,4 +15,4 @@
   tasks:
     - name: Include Wazuh role
       ansible.builtin.include_role:
-        name: ../../../slm-ansible-role-wazuh
+        name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}"

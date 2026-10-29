@@ -15,4 +15,4 @@
   tasks:
     - name: Apply role under test
       ansible.builtin.include_role:
-        name: wazuh
+        name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}"

@@ -19,7 +19,7 @@
   tasks:
     - name: Include wazuh backend role
       ansible.builtin.include_role:
-        name: ../../../slm-ansible-role-wazuh
+        name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}"
 
 - name: Converge - Agent
   hosts: wazuh_agent
@@ -35,4 +35,4 @@
   tasks:
     - name: Include wazuh agent role
       ansible.builtin.include_role:
-        name: ../../../slm-ansible-role-wazuh
+        name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}"
