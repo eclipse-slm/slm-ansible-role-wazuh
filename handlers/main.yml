@@ -38,6 +38,22 @@
     services:
       - wazuh.indexer
 
+# Handlers run in definition order, so this runs after any indexer restart and before the retention policy is changed
+- name: Wait For Indexer API To Become Available
+  ansible.builtin.uri:
+    url: "{{ fabos_wazuh_backend_indexer_url }}/_cluster/health"
+    user: "{{ fabos_wazuh_backend_indexer_username }}"
+    password: "{{ fabos_wazuh_backend_indexer_password }}"
+    force_basic_auth: true
+    validate_certs: false
+  register: __fabos_wazuh_indexer_health
+  until: __fabos_wazuh_indexer_health.status == 200
+  retries: 30
+  delay: 10
+  listen:
+    - Restart Indexer
+    - Change Indexer Retention Policy On Managed Indices
+
 - name: Change Indexer Retention Policy On Managed Indices
   ansible.builtin.uri:
     url: "{{ fabos_wazuh_backend_indexer_url }}/_plugins/_ism/change_policy/{{ item }}"
@@ -49,6 +65,11 @@
     body_format: json
     body:
       policy_id: "{{ fabos_wazuh_backend_indexer_retention_policy_id }}"
-    status_code: [200, 404]
+    status_code: [200, 400, 404]
+  register: __fabos_wazuh_retention_policy_change
+  # ISM answers 400 "no documents to get" when no index matches the pattern yet, which is not an error here
+  failed_when:
+    - __fabos_wazuh_retention_policy_change.status == 400
+    - "'no documents to get' not in (__fabos_wazuh_retention_policy_change.json.error.reason | default(''))"
   loop: "{{ fabos_wazuh_backend_indexer_retention_index_patterns }}"
-  retries: 5
+  retries: 30
